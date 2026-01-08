@@ -58,7 +58,7 @@
 
     <!-- SUCCESS SECTION -->
     <div class="card hidden" id="resultCard">
-        <2 style="color:#4ade80">✅ Sukses!</h2>
+        <h2 style="color:#4ade80">✅ Sukses!</h2>
         <p>Akun panel berhasil dibuat.</p>
         <div class="detail-box">Username: <span id="resUser">-</span></div>
         <div class="detail-box">Password: <span id="resPass">-</span></div>
@@ -69,11 +69,9 @@
 
 <script>
     // ==========================================
-    // KONFIGURASI LINK BACKEND (HARDCODED)
+    // KONFIGURASI BACKEND (SUDAH DIUPDATE)
     // ==========================================
-    // Ganti URL di bawah ini dengan ALAMAT PANEL PTERODACTYL KAMU + PORT 5015
-    // Contoh: http://n.connect.pterokudesu.web.id:5015
-    const API_URL = 'http://n.connect.pterokudesu.web.id:5015'; 
+    const API_URL = 'http://n.connect.pterokudesu.web.id:5015';
 
     const orderForm = document.getElementById('orderForm');
     const orderCard = document.getElementById('orderCard');
@@ -107,7 +105,7 @@
             const data = await res.json();
 
             if (data.status === 'success') {
-                transactionId = data.transactionId;
+                securityToken = data.transactionId;
                 document.getElementById('qrisImg').src = `data:image/png;base64,${data.qris_base64}`;
                 document.getElementById('qrisImg').classList.remove('hidden');
                 document.getElementById('loading').classList.add('hidden');
@@ -131,7 +129,7 @@
             const res = await fetch(`${API_URL}/api/check-payment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ transactionId })
+                body: JSON.stringify({ transactionId: transactionId })
             });
             const data = await res.json();
 
