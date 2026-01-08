@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store - PteroKuDesu</title>
+    <style>
+        :root { --bg: #0f111a; --card: #161922; --primary: #6366f1; --text: #fff; --border: #2d3748; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; min-height: 100vh; padding: 20px; }
+        .container { width: 100%; max-width: 500px; }
+        .card { background: var(--card); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; background: #0d0f16; border: 1px solid var(--border); color: white; border-radius: 6px; }
+        .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .btn:hover { filter: brightness(1.1); }
+        .price { font-size: 1.5rem; text-align: center; margin: 20px 0; font-weight: bold; color: #a5f3fc; }
+        .qris-img { width: 100%; border-radius: 10px; margin: 15px 0; }
+        .hidden { display: none; }
+        .detail-box { background: rgba(99, 102, 241, 0.1); padding: 10px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- FORM ORDER -->
+    <div class="card" id="orderCard">
+        <h2>🛒 Beli Panel</h2>
+        <form id="orderForm">
+            <input type="text" id="username" placeholder="Username Panel" required>
+            <select id="package" required>
+                <option value="2gb" data-price="2000">2GB RAM - Rp 2.000</option>
+                <option value="3gb" data-price="3000">3GB RAM - Rp 3.000</option>
+                <option value="4gb" data-price="4000">4GB RAM - Rp 4.000</option>
+                <option value="5gb" data-price="5000">5GB RAM - Rp 5.000</option>
+                <option value="6gb" data-price="6000">6GB RAM - Rp 6.000</option>
+                <option value="7gb" data-price="7000">7GB RAM - Rp 7.000</option>
+                <option value="8gb" data-price="8000">8GB RAM - Rp 8.000</option>
+                <option value="9gb" data-price="9000">9GB RAM - Rp 9.000</option>
+                <option value="10gb" data-price="10000">10GB RAM - Rp 10.000</option>
+                <option value="unli" data-price="9000">Unlimited RAM - Rp 9.000</option>
+            </select>
+            <div class="price" id="totalPrice">Rp 2.000</div>
+            <button type="submit" class="btn">Buat Pesanan</button>
+        </form>
+    </div>
+
+    <!-- QRIS SECTION -->
+    <div class="card hidden" id="qrisCard">
+        <h3>Scan QRIS</h3>
+        <div id="loading" style="text-align:center">Membuat QRIS...</div>
+        <img id="qrisImg" class="qris-img hidden" src="" alt="QRIS">
+        <div class="detail-box">
+            <div style="font-size:0.8rem">Transfer Sesuai Nominal:</div>
+            <div style="font-size:1.2rem; font-weight:bold" id="payAmount">Rp 0</div>
+        </div>
+        <button id="checkBtn" class="btn">🔄 Cek Status</button>
+        <button onclick="location.reload()" class="btn" style="background:#444; margin-top:10px">Batal</button>
+    </div>
+
+    <!-- SUCCESS SECTION -->
+    <div class="card hidden" id="resultCard">
+        <2 style="color:#4ade80">✅ Sukses!</h2>
+        <p>Akun panel berhasil dibuat.</p>
+        <div class="detail-box">Username: <span id="resUser">-</span></div>
+        <div class="detail-box">Password: <span id="resPass">-</span></div>
+        <div class="detail-box">Server ID: <span id="resId">-</span></div>
+        <button onclick="location.reload()" class="btn">Beli Lagi</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // KONFIGURASI LINK BACKEND (HARDCODED)
+    // ==========================================
+    // Ganti URL di bawah ini dengan ALAMAT PANEL PTERODACTYL KAMU + PORT 5015
+    // Contoh: http://n.connect.pterokudesu.web.id:5015
+    const API_URL = 'http://n.connect.pterokudesu.web.id:5015'; 
+
+    const orderForm = document.getElementById('orderForm');
+    const orderCard = document.getElementById('orderCard');
+    const qrisCard = document.getElementById('qrisCard');
+    const resultCard = document.getElementById('resultCard');
+    const packageSelect = document.getElementById('package');
+    const totalPriceEl = document.getElementById('totalPrice');
+
+    let transactionId = null;
+
+    packageSelect.addEventListener('change', () => {
+        const price = packageSelect.options[packageSelect.selectedIndex].dataset.price;
+        totalPriceEl.innerText = `Rp ${parseInt(price).toLocaleString('id-ID')}`;
+    });
+
+    orderForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        const pkg = packageSelect.value;
+        const price = parseInt(packageSelect.options[packageSelect.selectedIndex].dataset.price);
+
+        orderCard.classList.add('hidden');
+        qrisCard.classList.remove('hidden');
+
+        try {
+            const res = await fetch(`${API_URL}/api/create-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, packageName: pkg, price })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                transactionId = data.transactionId;
+                document.getElementById('qrisImg').src = `data:image/png;base64,${data.qris_base64}`;
+                document.getElementById('qrisImg').classList.remove('hidden');
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('payAmount').innerText = `Rp ${data.totalPay.toLocaleString('id-ID')}`;
+            } else {
+                alert(data.message);
+                location.reload();
+            }
+        } catch (err) {
+            alert("Gagal koneksi ke backend. Pastikan Backend Port 5015 sedang online.");
+            location.reload();
+        }
+    });
+
+    document.getElementById('checkBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('checkBtn');
+        btn.innerText = "Mengecek...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API_URL}/api/check-payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transactionId })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                qrisCard.classList.add('hidden');
+                resultCard.classList.remove('hidden');
+                document.getElementById('resUser').innerText = data.server_data.user.username;
+                document.getElementById('resPass').innerText = data.server_data.password;
+                document.getElementById('resId').innerText = data.server_data.server.id;
+            } else {
+                alert(data.message || "Belum ada pembayaran");
+            }
+        } catch (err) {
+            alert("Error checking status");
+        }
+
+        btn.innerText = "🔄 Cek Status";
+        btn.disabled = false;
+    });
+</script>
+
+</body>
+</html>
